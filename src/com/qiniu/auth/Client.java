@@ -24,6 +24,8 @@ import org.apache.http.util.EntityUtils;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import com.qiniu.utils.QiniuException;
+
 public class Client {
 
 	protected HttpClient mClient;
@@ -91,23 +93,32 @@ public class Client {
 		public void upload(long current, long total) {
 			publishProgress(current, total);
 		}
-		
+
 		@Override
 		protected Object doInBackground(Object... objects) {
 			try {
 				HttpResponse resp = roundtrip(mHttpRequest);
 				int statusCode = resp.getStatusLine().getStatusCode();
+				String phrase = resp.getStatusLine().getReasonPhrase();
 				String xl = resp.getFirstHeader("X-Log").getValue();
+				String reqId = resp.getFirstHeader("X-Reqid").getValue();
 
-				if (statusCode == 401) return new Exception("unauthorized!"); // android 2.3 will not response
-				if (xl.contains("invalid BlockCtx")) return new Exception(xl);
+				if (statusCode == 401) {
+					return new QiniuException(401, reqId, phrase); // android 2.3 will not response
+				}
 
 				byte[] data = EntityUtils.toByteArray(resp.getEntity());
-				if (statusCode / 100 == 2) return data;
-				if (data.length > 0) return new Exception(new String(data));
-				if (xl.length() > 0) return new Exception(xl);
-				return new Exception(resp.getStatusLine().getStatusCode() + ":" + resp.getStatusLine().getReasonPhrase());
-			} catch (IOException e) {
+				if (statusCode / 100 == 2) {
+					return data;
+				}
+
+				if (data.length > 0) {
+					return new QiniuException(statusCode, reqId, new String(data));
+				}
+				if (xl.length() > 0) {
+					return new QiniuException(statusCode, reqId, xl);
+				}
+				return new QiniuException(statusCode, reqId, phrase);} catch (IOException e) {
 				e.printStackTrace();
 				return e;
 			}
