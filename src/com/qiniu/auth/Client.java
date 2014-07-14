@@ -118,7 +118,8 @@ public class Client {
 				if (xl.length() > 0) {
 					return new QiniuException(statusCode, reqId, xl);
 				}
-				return new QiniuException(statusCode, reqId, phrase);} catch (IOException e) {
+				return new QiniuException(statusCode, reqId, phrase);
+			} catch (IOException e) {
 				e.printStackTrace();
 				return e;
 			}
