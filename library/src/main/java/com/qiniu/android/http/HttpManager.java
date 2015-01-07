@@ -4,6 +4,7 @@ import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 import com.qiniu.android.common.Config;
+import com.qiniu.android.storage.UrlConverter;
 
 import org.apache.http.Header;
 
@@ -19,14 +20,16 @@ import static java.lang.String.format;
 public final class HttpManager {
     private static final String userAgent = getUserAgent();
     private AsyncHttpClient client;
+    private UrlConverter converter;
 
 
-    public HttpManager() {
+    public HttpManager(UrlConverter converter) {
         client = new AsyncHttpClient();
         client.setConnectTimeout(Config.CONNECT_TIMEOUT);
         client.setResponseTimeout(Config.RESPONSE_TIMEOUT);
         client.setUserAgent(userAgent);
         client.setEnableRedirects(false);
+        this.converter = converter;
     }
 
     private static String genId() {
@@ -52,6 +55,10 @@ public final class HttpManager {
      */
     public void postData(String url, byte[] data, int offset, int size, Header[] headers,
                          ProgressHandler progressHandler, CompletionHandler completionHandler) {
+        if (converter != null){
+            url = converter.convert(url);
+        }
+
         AsyncHttpResponseHandler handler = new ResponseHandler(url, completionHandler, progressHandler);
         ByteArrayEntity entity = new ByteArrayEntity(data, offset, size);
         client.post(null, url, headers, entity, RequestParams.APPLICATION_OCTET_STREAM, handler);
@@ -72,6 +79,10 @@ public final class HttpManager {
      */
     public void multipartPost(String url, PostArgs args, ProgressHandler progressHandler, CompletionHandler completionHandler) {
         RequestParams requestParams = new RequestParams(args.params);
+        if (converter != null){
+            url = converter.convert(url);
+        }
+
         if (args.data != null) {
             ByteArrayInputStream buff = new ByteArrayInputStream(args.data);
             requestParams.put("file", buff, args.fileName, args.mimeType);

@@ -23,8 +23,12 @@ public final class UploadManager {
     }
 
     public UploadManager(Recorder recorder, KeyGenerator keyGen) {
+        this(recorder, keyGen, null);
+    }
+
+    public  UploadManager(Recorder recorder, KeyGenerator keyGen, UrlConverter converter) {
         this.recorder = recorder;
-        this.httpManager = new HttpManager();
+        this.httpManager = new HttpManager(converter);
         this.keyGen = keyGen;
     }
 
